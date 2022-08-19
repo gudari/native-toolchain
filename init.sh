@@ -199,7 +199,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 #Set Architecture of the platform
-ARCH_NAME=`uname -p`
+ARCH_NAME=`uname -m`
 export ARCH_NAME
 
 if [[ "$ARCH_NAME" == "ppc64le" ]]; then
