@@ -101,29 +101,24 @@ fi
     LLVM_VERSION=5.0.1 $SOURCE_DIR/source/llvm/build.sh
     LLVM_VERSION=5.0.1-asserts $SOURCE_DIR/source/llvm/build.sh
   fi
-  LLVM_VERSION=5.0.1-p3 $SOURCE_DIR/source/llvm/build.sh
-  LLVM_VERSION=5.0.1-asserts-p3 $SOURCE_DIR/source/llvm/build.sh
+  LLVM_VERSION=5.0.1-p4 $SOURCE_DIR/source/llvm/build.sh
+  LLVM_VERSION=5.0.1-asserts-p4 $SOURCE_DIR/source/llvm/build.sh
 )
-
-################################################################################
-# GCC (for Impala compilation only)
-################################################################################
-# This builds a newer version of gcc that can be used for compiling Impala.
-# It is not used to build the toolchain. This lets us try new compilers without
-# rebuilding the whole toolchain. Use of this compiler must respect any ABI
-# differences.
-GCC_VERSION=8.3.0 $SOURCE_DIR/source/gcc/build.sh
-GCC_VERSION=9.2.0 $SOURCE_DIR/source/gcc/build.sh
 
 ################################################################################
 # Build protobuf
 ################################################################################
-PROTOBUF_VERSION=3.5.1 $SOURCE_DIR/source/protobuf/build.sh
+PROTOBUF_VERSION=3.14.0 $SOURCE_DIR/source/protobuf/build.sh
+# Impala Clang builds hit a micro redefinition compiling error and symbol related
+# issue in linking with protobuf 3.14.0. Two patches were created to fix these
+# Clang compatibility issues.
+# 3.14.0-clangcompat-p2 should be used for Impala Clang builds.
+PROTOBUF_VERSION=3.14.0-clangcompat-p2 $SOURCE_DIR/source/protobuf/build.sh
 
 ################################################################################
 # Build libev
 ################################################################################
-LIBEV_VERSION=4.20 $SOURCE_DIR/source/libev/build.sh
+LIBEV_VERSION=4.20-p1 $SOURCE_DIR/source/libev/build.sh
 
 ################################################################################
 # Build crcutil
@@ -142,7 +137,7 @@ CRCUTIL_VERSION=440ba7babeff77ffad992df3a10c767f184e946e-p2\
 # Libraries that depend on OpenSSL will only use it if PRODUCTION=1.
 ################################################################################
 if (( BUILD_HISTORICAL )); then
-    OPENSSL_VERSION=1.0.1p $SOURCE_DIR/source/openssl/build.sh
+  OPENSSL_VERSION=1.0.1p $SOURCE_DIR/source/openssl/build.sh
 fi
 OPENSSL_VERSION=1.0.2l $SOURCE_DIR/source/openssl/build.sh
 
@@ -150,9 +145,10 @@ OPENSSL_VERSION=1.0.2l $SOURCE_DIR/source/openssl/build.sh
 # Build ZLib
 ################################################################################
 if (( BUILD_HISTORICAL )); then
-    ZLIB_VERSION=1.2.8 $SOURCE_DIR/source/zlib/build.sh
+  ZLIB_VERSION=1.2.8 $SOURCE_DIR/source/zlib/build.sh
+  ZLIB_VERSION=1.2.11 $SOURCE_DIR/source/zlib/build.sh
 fi
-ZLIB_VERSION=1.2.11 $SOURCE_DIR/source/zlib/build.sh
+ZLIB_VERSION=1.2.12 $SOURCE_DIR/source/zlib/build.sh
 
 
 ################################################################################
@@ -166,7 +162,7 @@ BISON_VERSION=3.0.4-p1 $SOURCE_DIR/source/bison/build.sh
 ################################################################################
 export BISON_VERSION=3.0.4-p1
 export BOOST_VERSION=1.74.0-p1
-export ZLIB_VERSION=1.2.11
+export ZLIB_VERSION=1.2.12
 export OPENSSL_VERSION=1.0.2l
 export PYTHON_VERSION=2.7.16
 
@@ -181,14 +177,16 @@ if [[ ! "$OSTYPE" == "darwin"* ]]; then
     THRIFT_VERSION=0.9.0-p8 $SOURCE_DIR/source/thrift/build.sh
     THRIFT_VERSION=0.9.0-p9 $SOURCE_DIR/source/thrift/build.sh
     THRIFT_VERSION=0.9.0-p10 $SOURCE_DIR/source/thrift/build.sh
+    THRIFT_VERSION=0.9.0-p12 $SOURCE_DIR/source/thrift/build.sh
     THRIFT_VERSION=0.9.3-p5 $SOURCE_DIR/source/thrift/build.sh
     THRIFT_VERSION=0.9.3-p6 $SOURCE_DIR/source/thrift/build.sh
+    THRIFT_VERSION=0.9.3-p8 $SOURCE_DIR/source/thrift/build.sh
+    THRIFT_VERSION=0.11.0-p4 $SOURCE_DIR/source/thrift/build.sh
   fi
-  # Required until Python 2.6 compatibility issues have been sorted out with
-  # thrift-0.9.3.
-  THRIFT_VERSION=0.9.0-p12 $SOURCE_DIR/source/thrift/build.sh
-  THRIFT_VERSION=0.9.3-p8 $SOURCE_DIR/source/thrift/build.sh
-  THRIFT_VERSION=0.11.0-p4 $SOURCE_DIR/source/thrift/build.sh
+  THRIFT_VERSION=0.11.0-p5 $SOURCE_DIR/source/thrift/build.sh
+  THRIFT_VERSION=0.13.0-p4 $SOURCE_DIR/source/thrift/build.sh
+  THRIFT_VERSION=0.14.2-p4 $SOURCE_DIR/source/thrift/build.sh
+  THRIFT_VERSION=0.16.0-p3 $SOURCE_DIR/source/thrift/build.sh
 else
   THRIFT_VERSION=0.9.2-p4 $SOURCE_DIR/source/thrift/build.sh
 fi
@@ -267,8 +265,9 @@ LZ4_VERSION=1.9.3 $SOURCE_DIR/source/lz4/build.sh
 ################################################################################
 if (( BUILD_HISTORICAL )); then
   ZSTD_VERSION=1.4.0 $SOURCE_DIR/source/zstd/build.sh
+  ZSTD_VERSION=1.4.9 $SOURCE_DIR/source/zstd/build.sh
 fi
-ZSTD_VERSION=1.4.9 $SOURCE_DIR/source/zstd/build.sh
+ZSTD_VERSION=1.5.2 $SOURCE_DIR/source/zstd/build.sh
 
 ################################################################################
 # Build re2
@@ -331,7 +330,11 @@ FLATBUFFERS_VERSION=1.6.0 $SOURCE_DIR/source/flatbuffers/build.sh
 ################################################################################
 (
   export BOOST_VERSION=1.74.0-p1
-  export KUDU_VERSION=f486f0813a
+  # IMPALA-11441: KUDU-1644 caused a regression in an Impala upsert test,
+  # so this is the equivalent of upstream Kudu dc4031f693 with KUDU-1644
+  # reverted.
+  export KUDU_VERSION=956093dd9d
+  export KUDU_GITHUB_URL=https://github.com/joemcdonnell/kudu.git
   export PYTHON_VERSION=2.7.16
   if $SOURCE_DIR/source/kudu/build.sh is_supported_platform; then
     $SOURCE_DIR/source/kudu/build.sh build
@@ -360,17 +363,18 @@ KRB5_VERSION=1.15.1 $SOURCE_DIR/source/krb5/build.sh
 ################################################################################
 (
   export LZ4_VERSION=1.9.3
-  export PROTOBUF_VERSION=3.5.1
+  export PROTOBUF_VERSION=3.14.0
   export SNAPPY_VERSION=1.1.8
-  export ZLIB_VERSION=1.2.11
+  export ZLIB_VERSION=1.2.12
+  export ZSTD_VERSION=1.5.2
   export GOOGLETEST_VERSION=1.8.0
   if (( BUILD_HISTORICAL )); then
     ORC_VERSION=1.4.3-p3 $SOURCE_DIR/source/orc/build.sh
     ORC_VERSION=1.5.5-p1 $SOURCE_DIR/source/orc/build.sh
     ORC_VERSION=1.6.2-p11 $SOURCE_DIR/source/orc/build.sh
-    ORC_VERSION=1.7.0-p3 $SOURCE_DIR/source/orc/build.sh
+    ORC_VERSION=1.7.0-p8 $SOURCE_DIR/source/orc/build.sh
   fi
-  ORC_VERSION=1.7.0-p4 $SOURCE_DIR/source/orc/build.sh
+  ORC_VERSION=1.7.0-p14 $SOURCE_DIR/source/orc/build.sh
 )
 
 ################################################################################
@@ -391,3 +395,7 @@ ARROW_VERSION=4.0.1 $SOURCE_DIR/source/arrow/build.sh
 # CURL
 ################################################################################
 CURL_VERSION=7.78.0 $SOURCE_DIR/source/curl/build.sh
+
+# CALLONCEHACK
+################################################################################
+CALLONCEHACK_VERSION=1.0.0 $SOURCE_DIR/source/calloncehack/build.sh
